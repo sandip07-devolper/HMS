@@ -1,0 +1,78 @@
+CREATE TABLE Students (
+    StudentID VARCHAR(20) PRIMARY KEY,
+    FullName NVARCHAR(100) NOT NULL,
+    Gender VARCHAR(10),
+    DateOfBirth DATE,
+    PhoneNumber VARCHAR(15),
+    Email VARCHAR(100),
+    Address NVARCHAR(200),
+    NationalID VARCHAR(50)
+);
+
+CREATE TABLE Courses (
+    CourseID VARCHAR(10) PRIMARY KEY,
+    CourseName NVARCHAR(100),
+    Description NVARCHAR(255),
+    DurationWeeks INT,
+    Fee DECIMAL(10, 2)
+);
+
+
+CREATE TABLE Enrollments (
+    EnrollmentID VARCHAR(20) PRIMARY KEY,
+    StudentID VARCHAR(20) REFERENCES Students(StudentID),
+    CourseID VARCHAR(10) REFERENCES Courses(CourseID),
+    EnrollmentDate DATE,
+    CompletionDate DATE,
+    Status VARCHAR(20) -- Enrolled, Completed, Dropped
+);
+
+CREATE TABLE Billing (
+    BillID VARCHAR(20) PRIMARY KEY,
+    EnrollmentID VARCHAR(20) REFERENCES Enrollments(EnrollmentID),
+    BillDate DATE,
+    Amount DECIMAL(10,2),
+    PaidAmount DECIMAL(10,2),
+    DueAmount DECIMAL(10,2),
+    PaymentStatus VARCHAR(20) -- Paid, Partial, Unpaid
+);
+
+CREATE TABLE Staff (
+    StaffID VARCHAR(20) PRIMARY KEY,
+    FullName NVARCHAR(100),
+    Gender VARCHAR(10),
+    Email VARCHAR(100),
+    PhoneNumber VARCHAR(15),
+    HireDate DATE,
+    RoleID VARCHAR(10) REFERENCES Roles(RoleID)
+);
+
+CREATE TABLE Roles (
+    RoleID VARCHAR(10) PRIMARY KEY,
+    RoleName NVARCHAR(50) -- Admin, Trainer, Accountant, Reception, etc.
+);
+
+CREATE TABLE CourseAssignments (
+    AssignmentID VARCHAR(20) PRIMARY KEY,
+    CourseID VARCHAR(10) REFERENCES Courses(CourseID),
+    StaffID VARCHAR(20) REFERENCES Staff(StaffID),
+    AssignedDate DATE
+);
+
+CREATE TABLE Receipts (
+    ReceiptID VARCHAR(20) PRIMARY KEY,
+    BillID VARCHAR(20) REFERENCES Billing(BillID),
+    ReceiptDate DATE,
+    PaidAmount DECIMAL(10,2),
+    PaymentMethod VARCHAR(20) -- Cash, Bank, QR, etc.
+);
+
+CREATE TABLE Users (
+    UserID VARCHAR(20) PRIMARY KEY,
+    Username NVARCHAR(100) UNIQUE NOT NULL,
+    PasswordHash NVARCHAR(200) NOT NULL,
+    RoleID VARCHAR(10) REFERENCES Roles(RoleID),
+    Email NVARCHAR(100),
+    IsActive BIT DEFAULT 1
+);
+
