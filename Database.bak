@@ -21,7 +21,7 @@ CREATE TABLE Students (
     StudentID VARCHAR(20) PRIMARY KEY,
     FullName NVARCHAR(100) NOT NULL,
     Gender VARCHAR(10),
-    DateOfBirth DATE,
+	DateOfBirth VARCHAR(20),
     PhoneNumber VARCHAR(15),
     Email VARCHAR(100),
     Address NVARCHAR(200),
