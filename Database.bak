@@ -28,6 +28,13 @@ CREATE TABLE Students (
     NationalID VARCHAR(50)
 );
 
+Create Table faculty(
+FacultyId int ,
+FacultyName varchar (30),
+Status varchar (5)
+
+);
+
 CREATE TABLE Courses (
     CourseID VARCHAR(10) PRIMARY KEY,
     CourseName NVARCHAR(100),
