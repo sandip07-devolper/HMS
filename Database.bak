@@ -1,40 +1,54 @@
--- 1. Supporting tables first
+-- Roles Table
 CREATE TABLE Roles (
-    RoleID VARCHAR(10) PRIMARY KEY,
+    RoleID INT PRIMARY KEY,
     RoleName NVARCHAR(50) -- Admin, Trainer, Accountant, Reception, etc.
 );
 
+-- Province Table
 CREATE TABLE Province (
     ProvinceID INT PRIMARY KEY,
     ProvinceName NVARCHAR(100)
 );
 
+-- District Table
 CREATE TABLE District (
-    DistrictID INT PRIMARY KEY,
-    DistrictName NVARCHAR(100),
+    DistrictID SMALLINT PRIMARY KEY,
+    ZoneID SMALLINT NOT NULL,
+    DistrictName VARCHAR(35) NOT NULL,
     ProvinceID INT,
+    DistrictName_Nep NVARCHAR(100),
     FOREIGN KEY (ProvinceID) REFERENCES Province(ProvinceID)
 );
 
--- 2. Main entity tables
+-- Source Table
+CREATE TABLE Source (
+    SourceID INT PRIMARY KEY,
+    SourceName NVARCHAR(100) -- e.g., 'Online Form', 'Walk-in', 'Referral', etc.
+);
+
+-- Students Table
 CREATE TABLE Students (
     StudentID VARCHAR(20) PRIMARY KEY,
     FullName NVARCHAR(100) NOT NULL,
     Gender VARCHAR(10),
-	DateOfBirth VARCHAR(20),
+    DateOfBirth VARCHAR(20),
     PhoneNumber VARCHAR(15),
     Email VARCHAR(100),
     Address NVARCHAR(200),
-    NationalID VARCHAR(50)
+    NationalID VARCHAR(50),
+    SourceID INT,
+    SourceTable NVARCHAR(100),
+    FOREIGN KEY (SourceID) REFERENCES Source(SourceID)
 );
 
-Create Table faculty(
-FacultyId int ,
-FacultyName varchar (30),
-Status varchar (5)
-
+-- Faculty Table
+CREATE TABLE Faculty (
+    FacultyID INT PRIMARY KEY,
+    FacultyName VARCHAR(30),
+    Status VARCHAR(5)
 );
 
+-- Courses Table
 CREATE TABLE Courses (
     CourseID VARCHAR(10) PRIMARY KEY,
     CourseName NVARCHAR(100),
@@ -43,26 +57,31 @@ CREATE TABLE Courses (
     Fee DECIMAL(10, 2)
 );
 
--- 3. Tables depending on earlier ones
+-- Enrollments Table
 CREATE TABLE Enrollments (
     EnrollmentID VARCHAR(20) PRIMARY KEY,
-    StudentID VARCHAR(20) REFERENCES Students(StudentID),
-    CourseID VARCHAR(10) REFERENCES Courses(CourseID),
+    StudentID VARCHAR(20),
+    CourseID VARCHAR(10),
     EnrollmentDate DATE,
     CompletionDate DATE,
-    Status VARCHAR(20) -- Enrolled, Completed, Dropped
+    Status VARCHAR(20), -- Enrolled, Completed, Dropped
+    FOREIGN KEY (StudentID) REFERENCES Students(StudentID),
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID)
 );
 
+-- Billing Table
 CREATE TABLE Billing (
     BillID VARCHAR(20) PRIMARY KEY,
-    EnrollmentID VARCHAR(20) REFERENCES Enrollments(EnrollmentID),
+    EnrollmentID VARCHAR(20),
     BillDate DATE,
     Amount DECIMAL(10,2),
     PaidAmount DECIMAL(10,2),
     DueAmount DECIMAL(10,2),
-    PaymentStatus VARCHAR(20) -- Paid, Partial, Unpaid
+    PaymentStatus VARCHAR(20), -- Paid, Partial, Unpaid
+    FOREIGN KEY (EnrollmentID) REFERENCES Enrollments(EnrollmentID)
 );
 
+-- Staff Table
 CREATE TABLE Staff (
     StaffID VARCHAR(20) PRIMARY KEY,
     FullName NVARCHAR(100),
@@ -70,17 +89,17 @@ CREATE TABLE Staff (
     Email VARCHAR(100),
     PhoneNumber VARCHAR(15),
     HireDate DATE,
-    RoleID VARCHAR(10),
+    RoleID INT,
     Religion VARCHAR(30),
 
     PermanentProvinceID INT,
-    PermanentDistrictID INT,
+    PermanentDistrictID SMALLINT,
     PermanentMunicipality NVARCHAR(100),
     PermanentWardNo VARCHAR(5),
     PermanentTole NVARCHAR(100),
 
     TemporaryProvinceID INT,
-    TemporaryDistrictID INT,
+    TemporaryDistrictID SMALLINT,
     TemporaryMunicipality NVARCHAR(100),
     TemporaryWardNo INT,
     TemporaryTole NVARCHAR(100),
@@ -92,26 +111,33 @@ CREATE TABLE Staff (
     FOREIGN KEY (TemporaryDistrictID) REFERENCES District(DistrictID)
 );
 
+-- Course Assignments Table
 CREATE TABLE CourseAssignments (
     AssignmentID VARCHAR(20) PRIMARY KEY,
-    CourseID VARCHAR(10) REFERENCES Courses(CourseID),
-    StaffID VARCHAR(20) REFERENCES Staff(StaffID),
-    AssignedDate DATE
+    CourseID VARCHAR(10),
+    StaffID VARCHAR(20),
+    AssignedDate DATE,
+    FOREIGN KEY (CourseID) REFERENCES Courses(CourseID),
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID)
 );
 
+-- Receipts Table
 CREATE TABLE Receipts (
     ReceiptID VARCHAR(20) PRIMARY KEY,
-    BillID VARCHAR(20) REFERENCES Billing(BillID),
+    BillID VARCHAR(20),
     ReceiptDate DATE,
     PaidAmount DECIMAL(10,2),
-    PaymentMethod VARCHAR(20) -- Cash, Bank, QR, etc.
+    PaymentMethod VARCHAR(20), -- Cash, Bank, QR, etc.
+    FOREIGN KEY (BillID) REFERENCES Billing(BillID)
 );
 
+-- Users Table
 CREATE TABLE Users (
     UserID VARCHAR(20) PRIMARY KEY,
     Username NVARCHAR(100) UNIQUE NOT NULL,
     PasswordHash NVARCHAR(200) NOT NULL,
-    RoleID VARCHAR(10) REFERENCES Roles(RoleID),
+    RoleID INT,
     Email NVARCHAR(100),
-    IsActive BIT DEFAULT 1
+    IsActive BIT DEFAULT 1,
+    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
