@@ -14,7 +14,7 @@ CREATE TABLE Province (
 CREATE TABLE District (
     DistrictID SMALLINT PRIMARY KEY,
     ZoneID SMALLINT NOT NULL,
-    DistrictName VARCHAR(35) NOT NULL,
+    DistrictName VARCHAR(50) NOT NULL,
     ProvinceID INT,
     DistrictName_Nep NVARCHAR(100),
     FOREIGN KEY (ProvinceID) REFERENCES Province(ProvinceID)
@@ -24,6 +24,12 @@ CREATE TABLE District (
 CREATE TABLE Source (
     SourceID INT PRIMARY KEY,
     SourceName NVARCHAR(100) -- e.g., 'Online Form', 'Walk-in', 'Referral', etc.
+);
+
+-- Shift Table
+CREATE TABLE Shift (
+    ShiftID INT PRIMARY KEY,
+    ShiftName NVARCHAR(50) NOT NULL -- e.g., Morning, Day, Evening
 );
 
 -- Students Table
@@ -38,7 +44,9 @@ CREATE TABLE Students (
     NationalID VARCHAR(50),
     SourceID INT,
     SourceTable NVARCHAR(100),
-    FOREIGN KEY (SourceID) REFERENCES Source(SourceID)
+    ShiftID INT,
+    FOREIGN KEY (SourceID) REFERENCES Source(SourceID),
+    FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
 );
 
 -- Faculty Table
