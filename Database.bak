@@ -1,3 +1,10 @@
+CREATE TABLE UserMain (
+    UserID INT PRIMARY KEY,
+    Username NVARCHAR(50) NOT NULL,
+    Password NVARCHAR(50) NOT NULL
+);
+
+
 -- Roles Table
 CREATE TABLE Roles (
     RoleID INT PRIMARY KEY,
@@ -41,12 +48,13 @@ CREATE TABLE Students (
     PhoneNumber VARCHAR(15),
     Email VARCHAR(100),
     Address NVARCHAR(200),
-    NationalID VARCHAR(50),
     SourceID INT,
     SourceTable NVARCHAR(100),
     ShiftID INT,
+	ImagePath NVARCHAR(255),
     FOREIGN KEY (SourceID) REFERENCES Source(SourceID),
     FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
+
 );
 
 -- Faculty Table
@@ -98,6 +106,7 @@ CREATE TABLE Staff (
     PhoneNumber VARCHAR(15),
     HireDate DATE,
     RoleID INT,
+	UserID INT,
     Religion VARCHAR(30),
 
     PermanentProvinceID INT,
@@ -113,6 +122,7 @@ CREATE TABLE Staff (
     TemporaryTole NVARCHAR(100),
 
     FOREIGN KEY (RoleID) REFERENCES Roles(RoleID),
+	FOREIGN KEY (UserID) REFERENCES UserMain(UserID),
     FOREIGN KEY (PermanentProvinceID) REFERENCES Province(ProvinceID),
     FOREIGN KEY (PermanentDistrictID) REFERENCES District(DistrictID),
     FOREIGN KEY (TemporaryProvinceID) REFERENCES Province(ProvinceID),
@@ -127,6 +137,7 @@ CREATE TABLE CourseAssignments (
     AssignedDate DATE,
     FOREIGN KEY (CourseID) REFERENCES Courses(CourseID),
     FOREIGN KEY (StaffID) REFERENCES Staff(StaffID)
+	
 );
 
 -- Receipts Table
