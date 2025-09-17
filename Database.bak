@@ -41,7 +41,7 @@ CREATE TABLE Shift (
 
 -- Students Table
 CREATE TABLE StudentMain (
-    StudentID VARCHAR(20) PRIMARY KEY,
+    StudentID INT PRIMARY KEY,
     FullName NVARCHAR(100) NOT NULL,
 	FirstName NVARCHAR(100) NOT NULL,
 	MiddleName NVARCHAR(100) NOT NULL,
@@ -78,7 +78,7 @@ CREATE TABLE Courses (
 -- Enrollments Table
 CREATE TABLE Enrollments (
     EnrollmentID VARCHAR(20) PRIMARY KEY,
-    StudentID VARCHAR(20),
+    StudentID INT,
     CourseID VARCHAR(10),
     EnrollmentDate DATE,
     CompletionDate DATE,
