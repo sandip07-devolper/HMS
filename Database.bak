@@ -162,3 +162,16 @@ CREATE TABLE Users (
     IsActive BIT DEFAULT 1,
     FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
+
+CREATE TABLE Visitor (
+    VisitorId INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(50) NOT NULL,
+    Email NVARCHAR(50) NULL,
+    Address NVARCHAR(50) NULL,
+    Phone NVARCHAR(20) NOT NULL,
+    Purpose NVARCHAR(100) NULL,
+    Remarks NVARCHAR(50) NULL,
+    CreatedDate NVARCHAR(20),
+    CreatedBy NVARCHAR(20) NULL
+);
+
