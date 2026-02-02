@@ -181,3 +181,9 @@ CREATE TABLE Billing (
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (EnrollmentID) REFERENCES Enrollments(EnrollmentID)
 );
+
+CREATE TABLE UserMain (
+    UserID INT PRIMARY KEY,          
+    UserName NVARCHAR(100) NOT NULL,
+    Password NVARCHAR(200) NOT NULL
+);
