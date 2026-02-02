@@ -1,107 +1,91 @@
-=========================
-🏢 Tenants (VERY IMPORTANT)
-=========================
 CREATE TABLE Tenants (
-    TenantID INT PRIMARY KEY IDENTITY(1,1),
+    TenantID INT IDENTITY(1,1) PRIMARY KEY,
     TenantName NVARCHAR(150) NOT NULL,
-    Domain NVARCHAR(100) NULL, -- subdomain or custom domain
+    Domain NVARCHAR(100) NULL,
     IsActive BIT DEFAULT 1,
-    CreatedDate DATETIME DEFAULT GETDATE()
+    CreatedDate NVARCHAR(20)
 );
 
-=========================
-👥 Users & Roles
-=========================
+
 CREATE TABLE Roles (
     RoleID INT PRIMARY KEY,
     RoleName NVARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Users (
-    UserID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     Username NVARCHAR(100) NOT NULL,
     PasswordHash NVARCHAR(200) NOT NULL,
     RoleID INT NOT NULL,
     Email NVARCHAR(100),
     IsActive BIT DEFAULT 1,
-    CreatedDate DATETIME DEFAULT GETDATE(),
+    CreatedDate NVARCHAR(20),
     UNIQUE (TenantID, Username),
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
 
-=========================
-🌍 Geography (Shared / Master)
-=========================
-
-(No TenantID – common data)
 
 CREATE TABLE Province (
-    ProvinceID INT PRIMARY KEY IDENTITY(1,1),
+    ProvinceID INT IDENTITY(1,1) PRIMARY KEY,
     ProvinceName NVARCHAR(100) NOT NULL
 );
 
 CREATE TABLE District (
-    DistrictID INT PRIMARY KEY IDENTITY(1,1),
+    DistrictID INT IDENTITY(1,1) PRIMARY KEY,
     DistrictName NVARCHAR(100) NOT NULL,
     ProvinceID INT,
     DistrictName_Nep NVARCHAR(100),
     FOREIGN KEY (ProvinceID) REFERENCES Province(ProvinceID)
 );
 
-=========================
-🔗 Sources & Shifts
-=========================
+
 CREATE TABLE Source (
-    SourceID INT PRIMARY KEY IDENTITY(1,1),
+    SourceID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     SourceName NVARCHAR(100) NOT NULL,
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID)
 );
 
 CREATE TABLE Shift (
-    ShiftID INT PRIMARY KEY IDENTITY(1,1),
+    ShiftID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     ShiftName NVARCHAR(50) NOT NULL,
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID)
 );
 
-=========================
-🎓 Students
-=========================
+
 CREATE TABLE StudentMain (
-    StudentID INT PRIMARY KEY IDENTITY(1,1),
+    StudentID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     FullName NVARCHAR(100) NOT NULL,
     FirstName NVARCHAR(50),
     MiddleName NVARCHAR(50),
     LastName NVARCHAR(50),
     Gender VARCHAR(10),
-    DateOfBirth DATE,
+    DateOfBirth NVARCHAR(20),
     PhoneNumber VARCHAR(15),
     Email NVARCHAR(100),
     Address NVARCHAR(200),
     SourceID INT,
     ShiftID INT,
     ImagePath NVARCHAR(255),
-    CreatedDate DATETIME DEFAULT GETDATE(),
+    CreatedDate NVARCHAR(20),
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (SourceID) REFERENCES Source(SourceID),
     FOREIGN KEY (ShiftID) REFERENCES Shift(ShiftID)
 );
 
-=========================
-🔁 Referrals & Follow-ups
-=========================
+
 CREATE TABLE Referrals (
-    ReferralID INT PRIMARY KEY IDENTITY(1,1),
+    ReferralID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     StudentID INT NOT NULL,
     ReferredByUserID INT NOT NULL,
     ReferralSourceID INT NULL,
-    ReferralDate DATETIME DEFAULT GETDATE(),
-    Status VARCHAR(20) DEFAULT 'Pending',
+    ReferralDate NVARCHAR(20),
+    Status VARCHAR(20),
     Remarks NVARCHAR(255),
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (StudentID) REFERENCES StudentMain(StudentID),
@@ -110,10 +94,10 @@ CREATE TABLE Referrals (
 );
 
 CREATE TABLE StudentFollowUps (
-    FollowUpID INT PRIMARY KEY IDENTITY(1,1),
+    FollowUpID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     ReferralID INT NOT NULL,
-    FollowUpDate DATETIME DEFAULT GETDATE(),
+    FollowUpDate NVARCHAR(20),
     FollowUpType VARCHAR(50),
     FollowUpRemarks NVARCHAR(255),
     FollowedByUserID INT,
@@ -122,17 +106,15 @@ CREATE TABLE StudentFollowUps (
     FOREIGN KEY (FollowedByUserID) REFERENCES Users(UserID)
 );
 
-=========================
-🧑‍🏫 Staff
-=========================
+
 CREATE TABLE Staff (
-    StaffID INT PRIMARY KEY IDENTITY(1,1),
+    StaffID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     FullName NVARCHAR(100),
     Gender VARCHAR(10),
     Email NVARCHAR(100),
     PhoneNumber VARCHAR(15),
-    HireDate DATE,
+    HireDate NVARCHAR(20),
     RoleID INT,
     UserID INT,
     Religion VARCHAR(30),
@@ -149,54 +131,53 @@ CREATE TABLE Staff (
     FOREIGN KEY (TemporaryDistrictID) REFERENCES District(DistrictID)
 );
 
-=========================
-📚 Courses & Enrollment
-=========================
-CREATE TABLE Courses (
-    CourseID INT PRIMARY KEY IDENTITY(1,1),
+CREATE TABLE Faculties (
+    FacultyID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
-    CourseName NVARCHAR(100),
-    Fee DECIMAL(10,2),
+    FacultyName NVARCHAR(100) NOT NULL,
     Status VARCHAR(20),
-    FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID)
+    CreatedDate NVARCHAR(20),
+    FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
+    UNIQUE (TenantID, FacultyName)
 );
 
+CREATE TABLE Courses (
+    CourseID INT IDENTITY(1,1) PRIMARY KEY,
+    TenantID INT NOT NULL,
+    FacultyID INT NOT NULL,
+    CourseName NVARCHAR(150) NOT NULL,
+    CourseCode NVARCHAR(50),
+    DurationWeeks INT,
+    Fee DECIMAL(10,2),
+    Description NVARCHAR(500),
+    Status VARCHAR(20),
+    CreatedDate NVARCHAR(20),
+    CreatedByUserID INT,
+    FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
+    FOREIGN KEY (FacultyID) REFERENCES Faculties(FacultyID),
+    FOREIGN KEY (CreatedByUserID) REFERENCES Users(UserID),
+    UNIQUE (TenantID, CourseName)
+);
+
+
 CREATE TABLE Enrollments (
-    EnrollmentID INT PRIMARY KEY IDENTITY(1,1),
+    EnrollmentID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     StudentID INT,
     CourseID INT,
-    EnrollmentDate DATE,
+    EnrollmentDate NVARCHAR(20),
     Status VARCHAR(20),
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (StudentID) REFERENCES StudentMain(StudentID),
     FOREIGN KEY (CourseID) REFERENCES Courses(CourseID)
 );
 
-=========================
-💰 Billing
-=========================
 CREATE TABLE Billing (
-    BillID INT PRIMARY KEY IDENTITY(1,1),
+    BillID INT IDENTITY(1,1) PRIMARY KEY,
     TenantID INT NOT NULL,
     EnrollmentID INT,
     Amount DECIMAL(10,2),
     PaidAmount DECIMAL(10,2),
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (EnrollmentID) REFERENCES Enrollments(EnrollmentID)
-);
-
-=========================
-📁 Documents
-=========================
-CREATE TABLE StudentDocuments (
-    DocumentID INT PRIMARY KEY IDENTITY(1,1),
-    TenantID INT NOT NULL,
-    StudentID INT,
-    FileName NVARCHAR(255),
-    FilePath NVARCHAR(500),
-    UploadedByUserID INT,
-    FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
-    FOREIGN KEY (StudentID) REFERENCES StudentMain(StudentID),
-    FOREIGN KEY (UploadedByUserID) REFERENCES Users(UserID)
 );
