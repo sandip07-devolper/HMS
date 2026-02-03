@@ -12,23 +12,36 @@ CREATE TABLE Roles (
     RoleName NVARCHAR(50) NOT NULL
 );
 
-CREATE TABLE Users (
+CREATE TABLE UserMain (
     UserID INT IDENTITY(1,1) PRIMARY KEY,
-    TenantID INT NULL,   -- NULL = Platform user (SuperAdmin)
-                         -- NOT NULL = Tenant user
+
+    TenantID INT NULL,  
+    -- NULL  = Platform / SuperAdmin
+    -- NOT NULL = Tenant User
+
     Username NVARCHAR(100) NOT NULL,
-    PasswordHash NVARCHAR(200) NOT NULL,
+    Email NVARCHAR(150) NOT NULL,
+
+    PasswordHash NVARCHAR(500) NOT NULL,
 
     RoleID INT NOT NULL,
-    Email NVARCHAR(100),
 
-    IsActive BIT DEFAULT 1,
-    CreatedDate NVARCHAR(20),
+    IsActive BIT NOT NULL DEFAULT 1,
+    IsEmailConfirmed BIT NOT NULL DEFAULT 0,
 
-    UNIQUE (TenantID, Username),
+    EmailConfirmationToken NVARCHAR(200) NULL,
+    EmailConfirmationExpiry Nvarchar (10) NULL,
 
-    FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
-    FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+    PasswordResetToken NVARCHAR(200) NULL,
+    PasswordResetExpiry Nvarchar (10),
+
+    CreatedDate Nvarchar (10),
+
+    CONSTRAINT UQ_User_Tenant_Username UNIQUE (TenantID, Username),
+    CONSTRAINT UQ_User_Email UNIQUE (Email),
+
+    CONSTRAINT FK_User_Tenant FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
+    CONSTRAINT FK_User_Role FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
 
 
@@ -188,8 +201,4 @@ CREATE TABLE Billing (
     FOREIGN KEY (EnrollmentID) REFERENCES Enrollments(EnrollmentID)
 );
 
-CREATE TABLE UserMain (
-    UserID INT PRIMARY KEY,          
-    UserName NVARCHAR(100) NOT NULL,
-    Password NVARCHAR(200) NOT NULL
-);
+
