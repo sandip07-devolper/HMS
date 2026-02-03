@@ -14,17 +14,23 @@ CREATE TABLE Roles (
 
 CREATE TABLE Users (
     UserID INT IDENTITY(1,1) PRIMARY KEY,
-    TenantID INT NOT NULL,
+    TenantID INT NULL,   -- NULL = Platform user (SuperAdmin)
+                         -- NOT NULL = Tenant user
     Username NVARCHAR(100) NOT NULL,
     PasswordHash NVARCHAR(200) NOT NULL,
+
     RoleID INT NOT NULL,
     Email NVARCHAR(100),
+
     IsActive BIT DEFAULT 1,
     CreatedDate NVARCHAR(20),
+
     UNIQUE (TenantID, Username),
+
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
 );
+
 
 
 CREATE TABLE Province (
