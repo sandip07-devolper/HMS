@@ -1,0 +1,381 @@
+-- ================================================================
+--  HMS — COMPLETE SQL TABLE DEFINITIONS
+--  Run these CREATE TABLE statements in order on a fresh database
+--  (or use as reference for what columns each table needs)
+-- ================================================================
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 1. Tenants  (each organisation: Consultancy or Hospitality)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Tenants] (
+    [TenantID]    INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantName]  NVARCHAR(200)  NOT NULL,
+    [Domain]      NVARCHAR(200)  NULL,
+    [Email]       NVARCHAR(200)  NULL,
+    [Phone]       NVARCHAR(50)   NULL,
+    -- ★ NEW COLUMN — tells the system what kind of org this is
+    [TenantType]  NVARCHAR(50)   NOT NULL DEFAULT 'Hospitality',
+    --   valid values: 'Hospitality' | 'Consultancy' | 'Both'
+    [Status]      NVARCHAR(50)   NOT NULL DEFAULT 'Active',
+    [IsActive]    BIT            NOT NULL DEFAULT 1,
+    [CreatedDate] NVARCHAR(30)   NULL
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 2. Roles
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Roles] (
+    [RoleID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [RoleName] NVARCHAR(100) NOT NULL,
+    [IsActive] BIT           NOT NULL DEFAULT 1
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 3. UserMain  (the auth table — all logins use this)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[UserMain] (
+    [UserID]                   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]                 INT           NULL,
+    [Username]                 NVARCHAR(100) NULL,
+    [Email]                    NVARCHAR(150) NULL,
+    [PasswordHash]             NVARCHAR(500) NULL,
+    [RoleID]                   INT           NULL,
+    [IsActive]                 BIT           NOT NULL DEFAULT 1,
+    [IsEmailConfirmed]         BIT           NOT NULL DEFAULT 0,
+    [EmailConfirmationToken]   NVARCHAR(500) NULL,
+    [EmailConfirmationExpiry]  NVARCHAR(50)  NULL,
+    [PasswordResetToken]       NVARCHAR(500) NULL,
+    [PasswordResetExpiry]      NVARCHAR(50)  NULL,
+    [Status]                   NVARCHAR(50)  NULL,
+    [CreatedDate]              NVARCHAR(30)  NULL,
+
+    CONSTRAINT [FK_UserMain_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_UserMain_Role]   FOREIGN KEY ([RoleID])   REFERENCES [dbo].[Roles]([RoleID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 4. Users  (legacy / tenant-specific user records — kept for FKs)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Users] (
+    [UserID]       INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]     INT           NOT NULL,
+    [Username]     NVARCHAR(100) NOT NULL,
+    [PasswordHash] NVARCHAR(500) NOT NULL,
+    [RoleID]       INT           NOT NULL,
+    [Email]        NVARCHAR(200) NULL,
+    [IsActive]     BIT           NOT NULL DEFAULT 1,
+    [CreatedDate]  NVARCHAR(30)  NULL,
+
+    CONSTRAINT [FK_Users_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Users_Role]   FOREIGN KEY ([RoleID])   REFERENCES [dbo].[Roles]([RoleID]),
+    CONSTRAINT [UQ_Users_TenantUsername] UNIQUE ([TenantID], [Username])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 5. Shifts  (Morning, Evening, etc.)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Shifts] (
+    [ShiftID]    INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]   INT           NOT NULL,
+    [ShiftName]  NVARCHAR(100) NOT NULL,
+    [StartTime]  NVARCHAR(20)  NULL,
+    [EndTime]    NVARCHAR(20)  NULL,
+    [IsActive]   BIT           NOT NULL DEFAULT 1,
+    [CreatedDate] NVARCHAR(30) NULL,
+
+    CONSTRAINT [FK_Shifts_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 6. Sources  (Walk-in, Social Media, Referral, etc.)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Sources] (
+    [SourceID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]   INT           NOT NULL,
+    [SourceName] NVARCHAR(100) NOT NULL,
+    [IsActive]   BIT           NOT NULL DEFAULT 1,
+
+    CONSTRAINT [FK_Sources_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 7. Faculties  (departments / faculties within a college)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Faculties] (
+    [FacultyID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]    INT           NOT NULL,
+    [FacultyName] NVARCHAR(150) NOT NULL,
+    [IsActive]    BIT           NOT NULL DEFAULT 1,
+
+    CONSTRAINT [FK_Faculties_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [UQ_Faculties_TenantName] UNIQUE ([TenantID], [FacultyName])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 8. Courses
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Courses] (
+    [CourseID]    INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]    INT            NOT NULL,
+    [FacultyID]   INT            NULL,
+    [CourseName]  NVARCHAR(200)  NOT NULL,
+    [Duration]    NVARCHAR(50)   NULL,
+    [Fee]         DECIMAL(18,2)  NULL,
+    [IsActive]    BIT            NOT NULL DEFAULT 1,
+    [CreatedDate] NVARCHAR(30)   NULL,
+    [CreatedByUserID] INT        NULL,
+
+    CONSTRAINT [FK_Courses_Tenant]  FOREIGN KEY ([TenantID])  REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Courses_Faculty] FOREIGN KEY ([FacultyID]) REFERENCES [dbo].[Faculties]([FacultyID]),
+    CONSTRAINT [UQ_Courses_TenantName] UNIQUE ([TenantID], [CourseName])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 9. Provinces & Districts  (location lookup tables)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Provinces] (
+    [ProvinceID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [ProvinceName] NVARCHAR(100) NOT NULL
+);
+
+CREATE TABLE [dbo].[Districts] (
+    [DistrictID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [ProvinceID]   INT           NULL,
+    [DistrictName] NVARCHAR(100) NOT NULL,
+
+    CONSTRAINT [FK_Districts_Province] FOREIGN KEY ([ProvinceID]) REFERENCES [dbo].[Provinces]([ProvinceID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 10. StudentMain  (student records per tenant)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[StudentMain] (
+    [StudentID]       INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]        INT            NOT NULL,
+    [FullName]        NVARCHAR(200)  NULL,
+    [FirstName]       NVARCHAR(100)  NULL,
+    [MiddleName]      NVARCHAR(100)  NULL,
+    [LastName]        NVARCHAR(100)  NULL,
+    [Gender]          NVARCHAR(20)   NULL,
+    [DateOfBirth]     NVARCHAR(20)   NULL,
+    [PhoneNumber]     NVARCHAR(50)   NULL,
+    [AltPhone]        NVARCHAR(50)   NULL,
+    [Email]           NVARCHAR(200)  NULL,
+    [Address]         NVARCHAR(500)  NULL,
+    [PermanentAddress] NVARCHAR(500) NULL,
+    [GuardianName]    NVARCHAR(200)  NULL,
+    [GuardianPhone]   NVARCHAR(50)   NULL,
+    [GuardianRelation] NVARCHAR(50)  NULL,
+    [Religion]        NVARCHAR(50)   NULL,
+    [Nationality]     NVARCHAR(100)  NULL,
+    [BloodGroup]      NVARCHAR(10)   NULL,
+    [MaritalStatus]   NVARCHAR(30)   NULL,
+    [PreviousSchool]  NVARCHAR(200)  NULL,
+    [Qualification]   NVARCHAR(100)  NULL,
+    [RegistrationDate] NVARCHAR(20)  NULL,
+    [ReferredByName]  NVARCHAR(200)  NULL,
+    [SourceID]        INT            NULL,
+    [ShiftID]         INT            NULL,
+    [ImagePath]       NVARCHAR(500)  NULL,
+    [Status]          NVARCHAR(50)   NOT NULL DEFAULT 'Active',
+    [AdmissionType]   NVARCHAR(50)   NULL,
+    [MedicalNotes]    NVARCHAR(2000) NULL,
+    [Remarks]         NVARCHAR(2000) NULL,
+    [CreatedDate]     NVARCHAR(30)   NULL,
+    [CreatedByUserID] INT            NULL,
+
+    CONSTRAINT [FK_StudentMain_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_StudentMain_Source] FOREIGN KEY ([SourceID]) REFERENCES [dbo].[Sources]([SourceID]),
+    CONSTRAINT [FK_StudentMain_Shift]  FOREIGN KEY ([ShiftID])  REFERENCES [dbo].[Shifts]([ShiftID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 11. Staff
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Staff] (
+    [StaffID]               INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]              INT           NOT NULL,
+    [FullName]              NVARCHAR(200) NOT NULL,
+    [Gender]                NVARCHAR(20)  NULL,
+    [Email]                 NVARCHAR(200) NULL,
+    [PhoneNumber]           NVARCHAR(50)  NULL,
+    [HireDate]              DATE          NULL,
+    [RoleID]                INT           NULL,
+    [UserID]                INT           NULL,
+    [Religion]              NVARCHAR(50)  NULL,
+    [PermanentProvinceID]   INT           NULL,
+    [PermanentDistrictID]   INT           NULL,
+    [TemporaryProvinceID]   INT           NULL,
+    [TemporaryDistrictID]   INT           NULL,
+
+    CONSTRAINT [FK_Staff_Tenant]   FOREIGN KEY ([TenantID])             REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Staff_Role]     FOREIGN KEY ([RoleID])               REFERENCES [dbo].[Roles]([RoleID]),
+    CONSTRAINT [FK_Staff_User]     FOREIGN KEY ([UserID])               REFERENCES [dbo].[Users]([UserID]),
+    CONSTRAINT [FK_Staff_PermProv] FOREIGN KEY ([PermanentProvinceID])  REFERENCES [dbo].[Provinces]([ProvinceID]),
+    CONSTRAINT [FK_Staff_PermDist] FOREIGN KEY ([PermanentDistrictID])  REFERENCES [dbo].[Districts]([DistrictID]),
+    CONSTRAINT [FK_Staff_TempProv] FOREIGN KEY ([TemporaryProvinceID])  REFERENCES [dbo].[Provinces]([ProvinceID]),
+    CONSTRAINT [FK_Staff_TempDist] FOREIGN KEY ([TemporaryDistrictID])  REFERENCES [dbo].[Districts]([DistrictID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 12. Referrals  (internal walk-in / lead referrals within a tenant)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Referrals] (
+    [ReferralID]     INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]       INT           NOT NULL,
+    [StudentID]      INT           NULL,
+    [ReferredByID]   INT           NULL,
+    [Source]         NVARCHAR(100) NULL,
+    [ReferralDate]   NVARCHAR(30)  NULL,
+    [Status]         NVARCHAR(50)  NOT NULL DEFAULT 'Pending',
+    [Notes]          NVARCHAR(1000) NULL,
+    [CreatedDate]    NVARCHAR(30)  NULL,
+
+    CONSTRAINT [FK_Referrals_Tenant]  FOREIGN KEY ([TenantID])   REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Referrals_Student] FOREIGN KEY ([StudentID])  REFERENCES [dbo].[StudentMain]([StudentID]),
+    CONSTRAINT [FK_Referrals_User]    FOREIGN KEY ([ReferredByID]) REFERENCES [dbo].[Users]([UserID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 13. StudentFollowUps
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[StudentFollowUps] (
+    [FollowUpID]    INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [ReferralID]    INT            NOT NULL,
+    [FollowedByID]  INT            NULL,
+    [FollowUpDate]  NVARCHAR(30)   NULL,
+    [Notes]         NVARCHAR(2000) NULL,
+    [NextFollowUp]  NVARCHAR(30)   NULL,
+    [Status]        NVARCHAR(50)   NULL,
+
+    CONSTRAINT [FK_FollowUp_Referral] FOREIGN KEY ([ReferralID])   REFERENCES [dbo].[Referrals]([ReferralID]),
+    CONSTRAINT [FK_FollowUp_User]     FOREIGN KEY ([FollowedByID]) REFERENCES [dbo].[Users]([UserID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 14. Enrollments
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Enrollments] (
+    [EnrollmentID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]       INT           NOT NULL,
+    [StudentID]      INT           NOT NULL,
+    [CourseID]       INT           NOT NULL,
+    [EnrollmentDate] NVARCHAR(30)  NULL,
+    [Status]         NVARCHAR(50)  NOT NULL DEFAULT 'Active',
+    [Remarks]        NVARCHAR(1000) NULL,
+    [CreatedDate]    NVARCHAR(30)  NULL,
+
+    CONSTRAINT [FK_Enrollment_Tenant]  FOREIGN KEY ([TenantID])  REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Enrollment_Student] FOREIGN KEY ([StudentID]) REFERENCES [dbo].[StudentMain]([StudentID]),
+    CONSTRAINT [FK_Enrollment_Course]  FOREIGN KEY ([CourseID])  REFERENCES [dbo].[Courses]([CourseID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 15. Billings
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Billings] (
+    [BillingID]    INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]     INT            NOT NULL,
+    [EnrollmentID] INT            NULL,
+    [Amount]       DECIMAL(18,2)  NOT NULL DEFAULT 0,
+    [PaidAmount]   DECIMAL(18,2)  NOT NULL DEFAULT 0,
+    [DueDate]      NVARCHAR(30)   NULL,
+    [PaidDate]     NVARCHAR(30)   NULL,
+    [Status]       NVARCHAR(50)   NOT NULL DEFAULT 'Unpaid',
+    [Notes]        NVARCHAR(1000) NULL,
+    [CreatedDate]  NVARCHAR(30)   NULL,
+
+    CONSTRAINT [FK_Billing_Tenant]     FOREIGN KEY ([TenantID])     REFERENCES [dbo].[Tenants]([TenantID]),
+    CONSTRAINT [FK_Billing_Enrollment] FOREIGN KEY ([EnrollmentID]) REFERENCES [dbo].[Enrollments]([EnrollmentID])
+);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 16. ConsultancyReferrals  ★ CROSS-TENANT REFERRAL TABLE ★
+--     Consultancy org sends student leads to Hospitality org
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[ConsultancyReferrals] (
+    [ConsultancyReferralID] INT            NOT NULL IDENTITY(1,1) PRIMARY KEY,
+
+    -- Which consultancy sent it, and which user sent it
+    [FromTenantID]          INT            NOT NULL,   -- Tenants.TenantID (Consultancy)
+    [SentByUserID]          INT            NULL,       -- UserMain.UserID
+
+    -- Which hospitality college receives it
+    [ToTenantID]            INT            NOT NULL,   -- Tenants.TenantID (Hospitality)
+
+    -- Student info filled by consultancy
+    [StudentName]           NVARCHAR(200)  NOT NULL,
+    [StudentPhone]          NVARCHAR(50)   NULL,
+    [StudentEmail]          NVARCHAR(200)  NULL,
+    [StudentDOB]            NVARCHAR(20)   NULL,
+    [StudentGender]         NVARCHAR(20)   NULL,
+    [StudentAddress]        NVARCHAR(500)  NULL,
+    [GuardianName]          NVARCHAR(200)  NULL,
+    [GuardianPhone]         NVARCHAR(50)   NULL,
+
+    -- Academic interest
+    [InterestedCourse]      NVARCHAR(200)  NULL,
+    [Qualification]         NVARCHAR(100)  NULL,
+    [PreferredShift]        NVARCHAR(50)   NULL,
+
+    -- Consultancy notes
+    [ReferralDate]          NVARCHAR(30)   NULL,
+    [Remarks]               NVARCHAR(1000) NULL,
+
+    -- Status & response managed by hospitality side
+    [Status]                NVARCHAR(50)   NOT NULL DEFAULT 'Pending',
+    --  valid values: 'Pending' | 'Contacted' | 'Enrolled' | 'Rejected'
+    [HospitalityRemarks]    NVARCHAR(1000) NULL,
+    [StatusUpdatedDate]     NVARCHAR(30)   NULL,
+    [AssignedToUserID]      INT            NULL,       -- UserMain.UserID (hospitality staff)
+    [EnrolledStudentID]     INT            NULL,       -- StudentMain.StudentID (filled on enroll)
+
+    -- FKs — all NO ACTION to avoid SQL Server multi-cascade error
+    CONSTRAINT [FK_CR_FromTenant]    FOREIGN KEY ([FromTenantID])    REFERENCES [dbo].[Tenants]([TenantID])      ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [FK_CR_ToTenant]      FOREIGN KEY ([ToTenantID])      REFERENCES [dbo].[Tenants]([TenantID])      ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [FK_CR_SentBy]        FOREIGN KEY ([SentByUserID])    REFERENCES [dbo].[UserMain]([UserID])       ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [FK_CR_AssignedTo]    FOREIGN KEY ([AssignedToUserID]) REFERENCES [dbo].[UserMain]([UserID])      ON DELETE NO ACTION ON UPDATE NO ACTION,
+    CONSTRAINT [FK_CR_Student]       FOREIGN KEY ([EnrolledStudentID]) REFERENCES [dbo].[StudentMain]([StudentID]) ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+-- Indexes for fast inbox/outbox queries
+CREATE INDEX [IX_CR_ToTenant]   ON [dbo].[ConsultancyReferrals] ([ToTenantID]);
+CREATE INDEX [IX_CR_FromTenant] ON [dbo].[ConsultancyReferrals] ([FromTenantID]);
+CREATE INDEX [IX_CR_Status]     ON [dbo].[ConsultancyReferrals] ([Status]);
+
+
+-- ────────────────────────────────────────────────────────────────
+-- 17. Visitors  (walk-in visitor log)
+-- ────────────────────────────────────────────────────────────────
+CREATE TABLE [dbo].[Visitors] (
+    [VisitorID]   INT           NOT NULL IDENTITY(1,1) PRIMARY KEY,
+    [TenantID]    INT           NOT NULL,
+    [FullName]    NVARCHAR(200) NULL,
+    [Phone]       NVARCHAR(50)  NULL,
+    [Purpose]     NVARCHAR(500) NULL,
+    [VisitDate]   NVARCHAR(30)  NULL,
+    [Status]      NVARCHAR(50)  NULL,
+    [Notes]       NVARCHAR(1000) NULL,
+
+    CONSTRAINT [FK_Visitors_Tenant] FOREIGN KEY ([TenantID]) REFERENCES [dbo].[Tenants]([TenantID])
+);
+
+-- ================================================================
+--  END OF TABLE DEFINITIONS
+-- ================================================================
