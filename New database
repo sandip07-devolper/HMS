@@ -379,3 +379,13 @@ CREATE TABLE [dbo].[Visitors] (
 -- ================================================================
 --  END OF TABLE DEFINITIONS
 -- ================================================================
+
+UPDATE Tenants
+SET
+    Domain = ISNULL(Domain, ''),
+    Email  = ISNULL(Email, ''),
+    Phone  = ISNULL(Phone, '');
+
+	ALTER TABLE Tenants ALTER COLUMN Domain NVARCHAR(255) NOT NULL;
+ALTER TABLE Tenants ALTER COLUMN Email  NVARCHAR(255) NOT NULL;
+ALTER TABLE Tenants ALTER COLUMN Phone  NVARCHAR(50)  NOT NULL;
