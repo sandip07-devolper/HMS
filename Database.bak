@@ -253,3 +253,119 @@ CREATE TABLE Billing (
     FOREIGN KEY (TenantID) REFERENCES Tenants(TenantID),
     FOREIGN KEY (EnrollmentID) REFERENCES Enrollments(EnrollmentID)
 );
+
+
+ALTER TABLE Tenants ALTER COLUMN Domain nvarchar(100) NOT NULL;
+ALTER TABLE Tenants ALTER COLUMN Email nvarchar(255) NOT NULL;
+ALTER TABLE Tenants ALTER COLUMN Phone nvarchar(50) NOT NULL;
+ALTER TABLE Tenants ALTER COLUMN Status nvarchar(50) NOT NULL;
+
+
+
+
+-- ============================================================
+--  ConsultancyReferrals — FIXED
+--  References UserMain (your actual auth table, not Users)
+--  All three nullable FKs use NO ACTION to avoid cascade cycles
+-- ============================================================
+CREATE TABLE [dbo].[ConsultancyReferrals]
+(
+    -- Primary Key
+    [ConsultancyReferralID]  INT            NOT NULL IDENTITY(1,1),
+
+    -- Who sent it (Consultancy tenant + user)
+    [FromTenantID]           INT            NOT NULL,
+    [SentByUserID]           INT            NULL,        -- UserMain.UserID
+
+    -- Who receives it (Hospitality tenant)
+    [ToTenantID]             INT            NOT NULL,
+
+    -- Student details filled by consultancy
+    [StudentName]            NVARCHAR(200)  NOT NULL,
+    [StudentPhone]           NVARCHAR(50)   NULL,
+    [StudentEmail]           NVARCHAR(200)  NULL,
+    [StudentDOB]             NVARCHAR(20)   NULL,
+    [StudentGender]          NVARCHAR(20)   NULL,
+    [StudentAddress]         NVARCHAR(500)  NULL,
+    [GuardianName]           NVARCHAR(200)  NULL,
+    [GuardianPhone]          NVARCHAR(50)   NULL,
+
+    -- Academic interest
+    [InterestedCourse]       NVARCHAR(200)  NULL,
+    [Qualification]          NVARCHAR(100)  NULL,
+    [PreferredShift]         NVARCHAR(50)   NULL,
+
+    -- Referral metadata
+    [ReferralDate]           NVARCHAR(30)   NULL,
+    [Remarks]                NVARCHAR(1000) NULL,
+
+    -- Status managed by Hospitality
+    [Status]                 NVARCHAR(50)   NOT NULL DEFAULT 'Pending',
+    [HospitalityRemarks]     NVARCHAR(1000) NULL,
+    [StatusUpdatedDate]      NVARCHAR(30)   NULL,
+    [AssignedToUserID]       INT            NULL,        -- UserMain.UserID
+    [EnrolledStudentID]      INT            NULL,        -- StudentMain.StudentID
+
+    -- ── Primary Key ──────────────────────────────────────────
+    CONSTRAINT [PK_ConsultancyReferrals]
+        PRIMARY KEY CLUSTERED ([ConsultancyReferralID] ASC),
+
+    -- ── FK → Tenants (consultancy side) ──────────────────────
+    -- Simple NO ACTION — a tenant being deleted is a rare admin op,
+    -- handle cleanup manually if needed
+    CONSTRAINT [FK_ConsultancyReferrals_FromTenant]
+        FOREIGN KEY ([FromTenantID])
+        REFERENCES [dbo].[Tenants] ([TenantID])
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION,
+
+    -- ── FK → Tenants (hospitality side) ──────────────────────
+    CONSTRAINT [FK_ConsultancyReferrals_ToTenant]
+        FOREIGN KEY ([ToTenantID])
+        REFERENCES [dbo].[Tenants] ([TenantID])
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION,
+
+    -- ── FK → UserMain (consultancy user who sent the referral) ─
+    -- NO ACTION: if the user is deleted, the referral row stays,
+    -- SentByUserID just becomes a dangling int (acceptable for audit)
+    CONSTRAINT [FK_ConsultancyReferrals_SentByUser]
+        FOREIGN KEY ([SentByUserID])
+        REFERENCES [dbo].[UserMain] ([UserID])
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION,
+
+    -- ── FK → UserMain (hospitality staff assigned to follow up) ─
+    -- NO ACTION: same reason — two FKs to same table cannot both
+    -- use SET NULL; SQL Server rejects it as a multi-cascade path
+    CONSTRAINT [FK_ConsultancyReferrals_AssignedToUser]
+        FOREIGN KEY ([AssignedToUserID])
+        REFERENCES [dbo].[UserMain] ([UserID])
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION,
+
+    -- ── FK → StudentMain (filled once student is enrolled) ────
+    CONSTRAINT [FK_ConsultancyReferrals_EnrolledStudent]
+        FOREIGN KEY ([EnrolledStudentID])
+        REFERENCES [dbo].[StudentMain] ([StudentID])
+        ON DELETE NO ACTION
+        ON UPDATE NO ACTION
+);
+GO
+
+-- ── Indexes ───────────────────────────────────────────────
+
+-- Hospitality inbox query: WHERE ToTenantID = @myTenant
+CREATE INDEX [IX_ConsultancyReferrals_ToTenantID]
+    ON [dbo].[ConsultancyReferrals] ([ToTenantID]);
+GO
+
+-- Consultancy sent list: WHERE FromTenantID = @myTenant
+CREATE INDEX [IX_ConsultancyReferrals_FromTenantID]
+    ON [dbo].[ConsultancyReferrals] ([FromTenantID]);
+GO
+
+-- Status filter (Pending / Contacted / Enrolled / Rejected)
+CREATE INDEX [IX_ConsultancyReferrals_Status]
+    ON [dbo].[ConsultancyReferrals] ([Status]);
+GO
