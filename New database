@@ -397,3 +397,10 @@ ADD
     Status NVARCHAR(50),
     CreatedDate NVARCHAR(50);
 
+
+  ALTER TABLE Enrollments
+ADD
+    CourseCode NVARCHAR(50),
+    Description NVARCHAR(255),
+    DurationWeeks INT;
+
