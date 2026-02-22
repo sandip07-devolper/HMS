@@ -409,3 +409,72 @@ ADD
     CreatedDate NVARCHAR(20),
     CreatedBy NVARCHAR(100);
 
+-- ============================================================
+-- HMS Fix SQL Script
+-- Run this in your SQL Server database (no EF migration needed)
+-- ============================================================
+
+-- ── 1. Notifications Table ─────────────────────────────────
+IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Notifications')
+BEGIN
+    CREATE TABLE [dbo].[Notifications] (
+        [NotificationID] INT IDENTITY(1,1) NOT NULL,
+        [ToTenantID]     INT NOT NULL,
+        [ToUserID]       INT NULL,
+        [Type]           NVARCHAR(50)  NOT NULL DEFAULT 'General',
+        [Title]          NVARCHAR(200) NOT NULL,
+        [Message]        NVARCHAR(1000) NOT NULL,
+        [ActionUrl]      NVARCHAR(500) NULL,
+        [IsRead]         BIT NOT NULL DEFAULT 0,
+        [CreatedDate]    NVARCHAR(30) NOT NULL DEFAULT CONVERT(NVARCHAR(30), GETDATE(), 120),
+
+        CONSTRAINT [PK_Notifications] PRIMARY KEY CLUSTERED ([NotificationID] ASC),
+
+        CONSTRAINT [FK_Notifications_Tenants]
+            FOREIGN KEY ([ToTenantID]) REFERENCES [dbo].[Tenants]([TenantID])
+            ON DELETE NO ACTION ON UPDATE NO ACTION
+    );
+
+    PRINT 'Notifications table created.';
+END
+ELSE
+BEGIN
+    PRINT 'Notifications table already exists — skipped.';
+END
+GO
+
+-- ── 2. Index for fast unread-count queries ─────────────────
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Notifications_ToTenantID_IsRead')
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_Notifications_ToTenantID_IsRead]
+        ON [dbo].[Notifications] ([ToTenantID], [IsRead])
+        INCLUDE ([NotificationID], [Type], [Title], [Message], [ActionUrl], [CreatedDate]);
+    PRINT 'Index IX_Notifications_ToTenantID_IsRead created.';
+END
+GO
+
+-- ── 3. Ensure TenantType column exists on Tenants ─────────
+IF NOT EXISTS (
+    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = 'Tenants' AND COLUMN_NAME = 'TenantType'
+)
+BEGIN
+    ALTER TABLE [dbo].[Tenants]
+        ADD [TenantType] NVARCHAR(50) NOT NULL DEFAULT 'Hospitality';
+    PRINT 'TenantType column added to Tenants.';
+END
+ELSE
+BEGIN
+    PRINT 'TenantType column already exists on Tenants — skipped.';
+END
+GO
+
+-- ── 4. Safety: update any NULL TenantType to 'Hospitality' ─
+UPDATE [dbo].[Tenants]
+SET [TenantType] = 'Hospitality'
+WHERE [TenantType] IS NULL OR [TenantType] = '';
+GO
+
+PRINT 'All HMS SQL patches applied successfully.';
+GO
+
