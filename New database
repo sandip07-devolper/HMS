@@ -404,3 +404,8 @@ ADD
     Description NVARCHAR(255),
     DurationWeeks INT;
 
+  ALTER TABLE Visitors
+ADD 
+    CreatedDate NVARCHAR(20),
+    CreatedBy NVARCHAR(100);
+
